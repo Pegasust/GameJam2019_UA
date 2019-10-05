@@ -8,6 +8,7 @@
     and added to construct_from_id func
 """
 import pygame
+import asset_manager
 from physics import Rotation
 
 def construct_from_id(type_id = 0, *arg,**kwarg):
@@ -29,57 +30,83 @@ def construct_from_id(type_id = 0, *arg,**kwarg):
     else:
         # Should not reach here.
         assert(false)
+        
+def _assign_current_sprite(self,rot):
+    self.current_sprite = (None if self.SPRITES is None else self.SPRITES[rot])
 
 Free_Space = None
+
+def _get_directional_sprites(dir:Rotation=None, surface:pygame.Surface=None):
+    if dir is None:
+        return None
+    dict_ = {dir:surface}
+    for i in range(1,4):
+        dict_[(dir+i)%4]=pygame.transform.rotate(surface,90*i)
+    return dict_
+
+def _static_dict_sprite(file_name, dir = Rotation.UP):
+    return {dir:pygame.image.load(asset_manager.get_char_sprite(file_name))}
+
+def _load_dynamic_sprites(file):
+    tup = tuple(_static_dict_sprite(file).items())[0]
+    return _get_directional_sprites(*tup)
 class Object:
     """ 
         Const: 
             TYPE_ID
-            IS_FREE_SPACE: whether this type is a handler for free_space.
-                free_space will be ignored on the World if there is a 
-                non-free_space occupying in one of its tile.
+            SPRITES is the dict of Rotation-Sprite
         Vars:
             position: type pygame.math.Vector2 top-right of the object
             rotation: Rotation type
             name: string that represents this obj
             height: height of this obj in physical pixel
             width: width of this obj in physical pixel
+            current_sprite: current pointer to sprite obj in SPRITES
     """
     TYPE_ID = 0
-    def __init__(self, name = "free_space", initial_x = 0, initial_y = 0, initial_rotation = Rotation.UP\
+    SPRITES = _static_dict_sprite("free_space.png")
+    def __init__(self, name = "free_space", i_x = 0, i_y = 0, i_rotation = Rotation.UP\
         ,height = 1, width = 1\
         ):
         self.position = pygame.Vector2()
-        self.position.x = initial_x
-        self.position.y = initial_y
-        self.rotation = initial_rotation
+        self.position.x = i_x
+        self.position.y = i_y
+        self.rotation = i_rotation
         self.name = name
         self.height = height
         self.width = width
+        _assign_current_sprite(self, self.rotation)
+        
     def __str__(self):
-        return "{}(pos={},rot={},name={},h={},w={})".format(self.__class__,\
+        return "{}(pos={},rot={},name={},h={},w={})".format(self.__class__.__name__,\
             self.position,self.rotation,self.name,self.height,self.width)
+    def update(*args, **kwargs):
+        return None
 class Dynamic_Object(Object):
     """ 
         This object can move and interact
     """
     TYPE_ID = 1
+    SPRITES = _load_dynamic_sprites("dynamo.png")
+    # SPRITES
     def __init__(self,name="dynamo", i_x:int=0, i_y:int=0, i_rot = Rotation.UP,
                  height = 1, width = 1)->None:
         super(Dynamic_Object, self).__init__(name,i_x, i_y, i_rot,
                                              height, width)
+    # TODO: IMPLEMENT UPDATES IN POSITION AND ROTATION
 
 """
     To be distinguished. Basically, will have position and rotation
     and might have micro-optimization by not moving
 """
-Static_Object = Dynamic_Object
+Static_Object = Object
 
 class Player(Dynamic_Object):
     """
     This object should be visually rendered in the back-most (lowest priority)
     """
     TYPE_ID = 2
+    SPRITES = _load_dynamic_sprites("player.png")
     def __init__(self,name:str="Suc",i_x:int=0, i_y:int=0, i_rot: Rotation\
         =Rotation.UP) -> None:
         super(Player,self).__init__(name, i_x, i_y, i_rot,1,1)
@@ -94,6 +121,7 @@ class Ultimate_Border(Static_Object):
         of the world
     """
     TYPE_ID = 3
+    SPRITES = _load_dynamic_sprites("ultimate_barrier.png")
     def __init__(self,i_x:int,i_y:int,i_rot:Rotation=Rotation.UP,\
         h:int=1,w:int=1)->None:
         super(Ultimate_Border,self).__init__("_BORDER_",i_x,i_y,i_rot,h,w)

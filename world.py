@@ -43,10 +43,15 @@ for key,val in _id2char.items():
     _char2id[val]=key
 
 def _get_char(obj)->str:
+    """
+    Returns char notation of that object type
+    """
     return _FREESPACE_CHAR if obj is objects.Free_Space \
         else _id2char[obj.TYPE_ID]
 def _get_id(char):
     """
+    Returns id of object type (which can be used with
+    objects.construct_from_id() to construct objects in runtime.
     Do not pass in Free_Space or _PLACEHOLDER_CHAR.
     """
     return _char2id[char]
@@ -97,27 +102,36 @@ class World:
         # Then, with post-processing array ptrs, initialize the rest
         # parts of the body of the objects.
 
-        # Create Free_Space world first.
+        # Create Free_Space world first. Allocate the memory.
         phys_pixels = []
         for wid_str in wid_strs:
             phys_pixels.append([objects.Free_Space for x in range(len(wid_str))])
+        # Initialize variables
         objs = []
         player = None
+        # Loop over again, this time we assign stuff
         for y0 in range(len(wid_strs)):
             for x0 in range(len(wid_strs[y0])):
+                # Check if the str should be ignored
                 if wid_strs[y0][x0] == _PLACEHOLDER_CHAR or\
                     wid_strs[y0][x0] == _FREESPACE_CHAR:
                     continue
                 type_id = _get_id(wid_strs[y0][x0])
+                # Arguments to "spawn" the object
                 kwargs = dict(i_x=x0, i_y=y0)
                 is_player = False
                 if type_id == objects.Player.TYPE_ID:
+                    # Add name to the argument to spawn obj
+                    # because Player needs "name"
                     kwargs["name"]=username
                     is_player = True
+                # Spawn the object with kwargs
                 obj = objects.construct_from_id(type_id,**kwargs)
                 objs.append(obj)
                 if is_player:
                     player = obj
+                # With the width and length of the obj,
+                # assign it to phys_pixels.
                 for _y in range(obj.height):
                     y = y0 + _y
                     for _x in range(obj.width):

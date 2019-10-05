@@ -25,6 +25,8 @@ class Rotation:
         return self
     def get_rotation(self):
         return self.value
+    def get_next_rotation(self):
+        return (self.value + 1)%4
     def rotate_left(self):
         """
             Rotates left relative to current position:
@@ -51,5 +53,4 @@ class Rotation:
         self.value += 1
         self.value %= 4
         return self
-
 
