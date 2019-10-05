@@ -12,6 +12,7 @@ import pygame
 from pygame.locals import *
 import world
 import objects
+from post_processing import *
 class Raw_Renderer:
     """
     Const:
@@ -23,11 +24,12 @@ class Raw_Renderer:
             _updated_rects: rects updated since the last time this was
                 called
     """
-    VISUAL_PER_PHYSICAL_PIXELS = 16
+    VISUAL_PER_PHYSICAL_PIXELS = Graphical_Specs.\
+        VISUAL_PIXELS_RES
     # set display to custom resolution
     def __init__(self, width=1280, height=720, default_bg=pygame.Color(0,0,0)):
         self._screen_surface = pygame.display.set_mode((width, height)\
-            # ,flags = pygame.FULLSCREEN|pygame.HWSURFACE\
+            ,flags = pygame.FULLSCREEN|pygame.HWSURFACE\
             )
         pygame.display.set_caption('pygame_test')
         self._updated_rects = []
@@ -43,7 +45,7 @@ class Raw_Renderer:
         #pygame.display.flip()
 
     def update(self, world_obj:world.World\
-        , x_offset = 32, y_offset = 32):
+        , x_offset = 1, y_offset = 1):
         bg = self._background.copy()
         _x=x_offset
         _y=y_offset
@@ -56,8 +58,8 @@ class Raw_Renderer:
                 bg.blit(\
                         spec_obj.current_sprite,(_x,_y))
 
-                _x += self.VISUAL_PER_PHYSICAL_PIXELS
-            _y += self.VISUAL_PER_PHYSICAL_PIXELS
+                _x += self.VISUAL_PER_PHYSICAL_PIXELS + x_offset
+            _y += self.VISUAL_PER_PHYSICAL_PIXELS + y_offset
             _x = x_offset
         self._updated_rects = self._screen_surface.blit(bg,(0,0))
         

@@ -10,7 +10,7 @@
 import pygame
 import asset_manager
 from physics import Rotation
-
+from post_processing import *
 def construct_from_id(type_id = 0, *arg,**kwarg):
     """
     **kwarg only needs "i_x" and "i_y" keys.
@@ -45,11 +45,16 @@ def _get_directional_sprites(dir:Rotation=None, surface:pygame.Surface=None):
     return dict_
 
 def _static_dict_sprite(file_name, dir = Rotation.UP):
-    return {dir:pygame.image.load(asset_manager.get_char_sprite(file_name))}
+    # Returns a scaled sprite from assets/objs/file_name to 
+    # post_processing.Graphical_Specs.VISUAL_PIXELS_RES
+    return {dir:pygame.transform.scale(pygame.image.\
+        load(asset_manager.get_char_sprite(file_name)),(Graphical_Specs.\
+        VISUAL_PIXELS_RES,Graphical_Specs.VISUAL_PIXELS_RES))}
 
 def _load_dynamic_sprites(file):
     tup = tuple(_static_dict_sprite(file).items())[0]
     return _get_directional_sprites(*tup)
+
 class Object:
     """ 
         Const: 
