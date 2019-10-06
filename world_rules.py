@@ -1,0 +1,5 @@
+GAME_OVER = -1
+KILLED = 1
+KILL = 2
+BLOCKED = 3
+IGNORE = None

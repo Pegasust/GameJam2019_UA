@@ -28,7 +28,7 @@
     For now, no grouping is needed to produce
 """
 import objects
-
+import world_rules
 _PLACEHOLDER_CHAR = '\\'
 _FREESPACE_CHAR = ' '
 _id2char = {
@@ -60,8 +60,9 @@ class World:
         consts:
         vars:
             _phys_pixels: 2D (columns of rows) array that stores Object pointers
-            _objs: list of objects in the world, includes player, excludes free_space
+            _objs: list of objects in the world, excludes player, excludes free_space
             player: the player
+            game_over: bool
     """
 
     def __init__(self, phys_pixels: [[objects.Object]], objs: [objects.Object],\
@@ -71,6 +72,7 @@ class World:
         self._phys_pixels = phys_pixels
         self._objs = objs
         self.player = player
+        self.game_over = False
         #self._free_space = free_space
 
 
@@ -90,7 +92,7 @@ class World:
             for y in range(height)]
         phys_pixels += [[bot for x in range(width+2)]]
         phys_pixels[1][1] = player
-        objs = [player,top,bot,left,right]
+        objs = [top,bot,left,right]
         return cls(phys_pixels, objs, player)
 
     @classmethod
@@ -127,9 +129,11 @@ class World:
                     is_player = True
                 # Spawn the object with kwargs
                 obj = objects.construct_from_id(type_id,**kwargs)
-                objs.append(obj)
                 if is_player:
                     player = obj
+                    assert(player.TYPE_ID == objects.Player.TYPE_ID)
+                else:
+                    objs.append(obj)
                 # With the width and length of the obj,
                 # assign it to phys_pixels.
                 for _y in range(obj.height):
@@ -138,6 +142,7 @@ class World:
                         x = x0 + _x
                         phys_pixels[y][x] = obj
         return cls(phys_pixels,objs,player)
+
     def get_str_map(self):
         """
         Create str_map formatted string represents the world
@@ -156,8 +161,30 @@ class World:
         for obj in self._objs:
             ret_val+=("\n{}".format(obj))
         return ret_val
-    def update(*args, **kwargs):
-        raise NotImplementedError
+    def handle_rule_output(self, rule, obj_req, target_obj):
+        if rule == world_rules.KILL:
+            self.eliminate(target_obj)
+        elif rule == world_rules.KILLED:
+            self.eliminate(obj_req)
+        elif rule == world_rules.GAME_OVER:
+            self.game_over = True
+        return None
+    def update(self,*args, **kwargs):
+        """
+            Player is updated first, followed by other dynamic
+            objects
+        """
+        (outcome, player, interacted) = \
+            self.player.update({'world':self._phys_pixels,'objs':self._objs})
+        self.handle_rule_output(outcome,player,interacted)
+        for foreign_obj in self._objs:
+            self.handle_rule_output(\
+                *foreign_obj.update(world=self._phys_pixels,\
+                objs=self._objs))
+    
+    def eliminate(self, obj):
+        self._objs.remove(obj)
+        
     pass
 if __name__ == "__main__":
     print("World: ")

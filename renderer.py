@@ -29,7 +29,7 @@ class Raw_Renderer:
     # set display to custom resolution
     def __init__(self, width=1280, height=720, default_bg=pygame.Color(0,0,0)):
         self._screen_surface = pygame.display.set_mode((width, height)\
-            ,flags = pygame.FULLSCREEN|pygame.HWSURFACE\
+            #,flags = pygame.FULLSCREEN|pygame.HWSURFACE\
             )
         pygame.display.set_caption('pygame_test')
         self._updated_rects = []

@@ -20,6 +20,7 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
+        w0.update()
         render_module.update(w0)
 
 if __name__ == "__main__":

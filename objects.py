@@ -7,10 +7,13 @@
     IMPORTANT: all objects should be implemented in this file
     and added to construct_from_id func
 """
+import world_rules
 import pygame
 import asset_manager
 from physics import Rotation
 from post_processing import *
+import player_input_listener as input_listener
+
 def construct_from_id(type_id = 0, *arg,**kwarg):
     """
     **kwarg only needs "i_x" and "i_y" keys.
@@ -85,8 +88,8 @@ class Object:
     def __str__(self):
         return "{}(pos={},rot={},name={},h={},w={})".format(self.__class__.__name__,\
             self.position,self.rotation,self.name,self.height,self.width)
-    def update(*args, **kwargs):
-        return None
+    def update(self,*args, **kwargs):
+        return (world_rules.IGNORE,None,None)
 class Dynamic_Object(Object):
     """ 
         This object can move and interact
@@ -99,17 +102,85 @@ class Dynamic_Object(Object):
         super(Dynamic_Object, self).__init__(name,i_x, i_y, i_rot,
                                              height, width)
     # TODO: IMPLEMENT UPDATES IN POSITION AND ROTATION
-    def move_forward(self):
+    def update(self,*args,**kwargs):
+        """
+        Dynamic's update should return None, GAME_OVER, or KILLED
+        """
+        # Some logics that is unique to each object
+        # Just moves randomly
+        return (world_rules.IGNORE,None, None)
+    def interact(self, other:Object):
+        """ Suppose dynamo is hostile
+            That one-hit kills Player
+        """
+        if other is Free_Space:
+            return world_rules.IGNORE
+        elif other.TYPE_ID == Player.TYPE_ID:
+            return world_rules.GAME_OVER
+        elif other.TYPE_ID == Static_Object.TYPE_ID:
+            return world_rules.BLOCKED
+        
+    def move_forward(self,*args,**kwargs):
+        desired_position = pygame.math.Vector2(self.position)
         if self.rotation == Rotation.UP:
-            self.position.y+=1
+            desired_position.y+=1
         elif self.rotation == Rotation.DOWN:
-            self.position.y-=1
+            desired_position.y-=1
         elif self.rotation == Rotation.RIGHT:
-            self.position.x+=1
+            desired_position.x+=1
         else:
-            self.position.x-=1
+            desired_position.x-=1
+        phys_pixels=kwargs['world']
+        other = detect_collision(phys_pixels,desired_position)
+        outcome = self.interact(other)
+        return self.handle_outcome_interaction(other,outcome)
+
+    def handle_outcome_interaction(self, other,outcome):        
+        if outcome == world_rules.BLOCKED:
+            return (outcome,self,other)
+        elif outcome ==world_rules.IGNORE:
+            self.handle_world_change(phys_pixels,desired_position)
+            return (outcome, self, other)
+        elif outcome == world_rules.KILL:
+            other.perish(phys_pixels)
+            return (outcome, self, other)
+        elif outcome == world_rules.KILLED:
+            self.perish(phys_pixels)
+            return (outcome, self, other)
+    def perish(self, phys_pixels):
+        """
+        Does not exist on the map, but the world still
+        has reference to the obj
+        """
+        for y in range(len(self.height)):
+            _y = self.position.y+y
+            for x in range(len(self.width)):
+                _x = self.position.x+x
+                phys_pixels = Free_Space
+
+    def handle_world_change(self,phys_pixels, new_pos):
+        """
+        Sanitizes pointers on occupying lands to Free_Space.
+        Transforms new pointers to self
+        """
+        self.perish(phys_pixels)
+        for y in range(len(self.height)):
+            _y = new_pos.y
+            for x in range(len(self.width)):
+                _x = new_pos.x+x
+                phys_pixels = self
+        self.position = new_pos
+
+    @staticmethod
+    def detect_collision(phys_pixels,desired_position):
+        """
+            Returns None or objects.Free_Space if nothing
+            Returns the object otherwise
+        """
+        return phys_pixels[desired_position.y][desired_position.x]
     def turn(self,rotation):
         self.rotation = rotation
+        return (world_rules.IGNORE, self, None)
 
 """
     To be distinguished. Basically, will have position and rotation
@@ -121,13 +192,18 @@ class Player(Dynamic_Object):
     """
     This object should be visually rendered in the back-most (lowest priority)
     Extended vars:
-        Input_Listener
+        input_listener: brings control to the object. This obj calls move_forward, turn
+            and in the future, abilities upon update().
     """
     TYPE_ID = 2
     SPRITES = _load_dynamic_sprites("player.png")
     def __init__(self,name:str="Suc",i_x:int=0, i_y:int=0, i_rot: Rotation\
         =Rotation.UP) -> None:
         super(Player,self).__init__(name, i_x, i_y, i_rot,1,1)
+        self.input_listener = input_listener.Player_Listener(self)
+
+    def update(self,*args, **kwargs):
+        self.input_listener.update()
 
 
     @classmethod
