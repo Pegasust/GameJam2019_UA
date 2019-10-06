@@ -1,4 +1,5 @@
 """
+    Deprecated.
    This module will need to be consulted to the designers.
    For now, it takes arrow keys to move and no additional interactions.
 """
@@ -8,7 +9,7 @@ from physics import Rotation
 import threading
 import queue
 
-INPUT_CHECK_FREQUENCY = 5000  #Hz
+INPUT_CHECK_FREQUENCY = 1000  #Hz
 
 class Player_Command:
     """
@@ -41,11 +42,16 @@ class Move_Turn_Handler:
         
     """
     MOVE_DEADZONE = 100
+    MOVE_RELEASE = 150
     def __init__(self):
         self.time_held = [0 ,0, 0, 0]
     def _registers(self,axis):
+        """
+        Determines whether input in the axis is worth considered moving
+        """
         return abs(axis)>self.MOVE_DEADZONE
     def get_command(self)->[int]:
+        # Initialize list of commands yield from current input
         cmd_list = []
         y_axis = self.time_held[Rotation.UP]-self.time_held[Rotation.DOWN]
         if self._registers(y_axis):
@@ -61,10 +67,9 @@ class Move_Turn_Handler:
     def calculate_time_held(self, bool_arr, delta_time):
         for i in range(len(bool_arr)):
             if(bool_arr[i]):
-                self.time_held[i] = min(1000,self.time_held[i]+delta_time)
+                self.time_held[i] = min(MOVE_RELEASE*2,self.time_held[i]+delta_time)
             else:
                 self.time_held[i] = max(0, self.time_held[i]-delta_time)
-
 
 class Input_Module:
     """
@@ -84,7 +89,6 @@ class Input_Module:
             cmds = self.move_turn_handler.get_command()
             for cmd in cmds:
                 self.input_buffer.put(cmd)
-                print("put {}_{}".format("MOVE" if ))
             self.clock.tick(frequency)
     def __init__(self):
         self.input_buffer = queue.Queue(256)
@@ -96,6 +100,8 @@ class Input_Module:
     def try_sync(self):
         self.exit = True
         self.thread.join()
+    def __del__(self):
+        self.try_sync()
 
 if __name__ == "__main__":
     dir = 0

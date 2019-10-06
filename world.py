@@ -156,6 +156,8 @@ class World:
         for obj in self._objs:
             ret_val+=("\n{}".format(obj))
         return ret_val
+    def update(*args, **kwargs):
+        raise NotImplementedError
     pass
 if __name__ == "__main__":
     print("World: ")

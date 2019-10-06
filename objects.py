@@ -99,6 +99,17 @@ class Dynamic_Object(Object):
         super(Dynamic_Object, self).__init__(name,i_x, i_y, i_rot,
                                              height, width)
     # TODO: IMPLEMENT UPDATES IN POSITION AND ROTATION
+    def move_forward(self):
+        if self.rotation == Rotation.UP:
+            self.position.y+=1
+        elif self.rotation == Rotation.DOWN:
+            self.position.y-=1
+        elif self.rotation == Rotation.RIGHT:
+            self.position.x+=1
+        else:
+            self.position.x-=1
+    def turn(self,rotation):
+        self.rotation = rotation
 
 """
     To be distinguished. Basically, will have position and rotation
@@ -109,12 +120,15 @@ Static_Object = Object
 class Player(Dynamic_Object):
     """
     This object should be visually rendered in the back-most (lowest priority)
+    Extended vars:
+        Input_Listener
     """
     TYPE_ID = 2
     SPRITES = _load_dynamic_sprites("player.png")
     def __init__(self,name:str="Suc",i_x:int=0, i_y:int=0, i_rot: Rotation\
         =Rotation.UP) -> None:
         super(Player,self).__init__(name, i_x, i_y, i_rot,1,1)
+
 
     @classmethod
     def get_default(cls,i_x:int, i_y:int) -> None:  # cls stands for class
